@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Ein Ergebnis der Verarbeitung auf einem spezifischen Floor.
+ * Ergebnis der Verarbeitung auf einem spezifischen Floor.
  */
 @Data
 @Builder
@@ -18,4 +18,12 @@ public class ProcessedFloor {
     private String extractedData;
     private boolean successful;
     private String errorMessage;
+
+    public static ProcessedFloor success(FloorDefinition floor, String data) {
+        return ProcessedFloor.builder().definition(floor).extractedData(data).successful(true).build();
+    }
+
+    public static ProcessedFloor failure(FloorDefinition floor, String error) {
+        return ProcessedFloor.builder().definition(floor).successful(false).errorMessage(error).build();
+    }
 }

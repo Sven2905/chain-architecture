@@ -8,7 +8,6 @@ import de.signaliduna.diser.cadisco.disco.model.DiscoResponse;
 import de.signaliduna.diser.cadisco.disco.service.ArchivPlusService;
 import de.signaliduna.diser.cadisco.disco.service.DjService;
 import de.signaliduna.diser.cadisco.disco.service.IcdosService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,12 +23,25 @@ import reactor.core.scheduler.Schedulers;
 @Slf4j
 @RestController
 @RequestMapping("/disco")
-@RequiredArgsConstructor
 public class DiscoEntranceController {
 
-    private final ArchivPlusService archivPlusService;
-    private final IcdosService icdosService;
     private final DjService djService;
+    private final SecurityCheckLink securityCheckLink;
+    private final GuestDataSyncLink guestDataSyncLink;
+    private final FloorSelectorLink floorSelectorLink;
+    private final FloorRequirementLink floorRequirementLink;
+    private final FloorForwardingLink floorForwardingLink;
+    private final DiscoReportLink discoReportLink;
+
+    public DiscoEntranceController(ArchivPlusService archivPlusService, IcdosService icdosService, DjService djService) {
+        this.djService = djService;
+        this.securityCheckLink = new SecurityCheckLink();
+        this.guestDataSyncLink = new GuestDataSyncLink(archivPlusService, icdosService);
+        this.floorSelectorLink = new FloorSelectorLink(djService);
+        this.floorRequirementLink = new FloorRequirementLink(djService);
+        this.floorForwardingLink = new FloorForwardingLink();
+        this.discoReportLink = new DiscoReportLink();
+    }
 
     @PostMapping("/entry")
     public Mono<DiscoResponse> enterDisco(@RequestBody AMSInput request) {
@@ -39,12 +51,10 @@ public class DiscoEntranceController {
         ctx.setAvailableFloors(djService.getDefaultFloors());
         ctx.log("Disco: Guest " + request.getName() + " arrived at the entrance.");
 
-        // Phase 1: Security Check (Bouncer)
         return Chain.start(Mono.just(request), ctx)
-                .link(new SecurityCheckLink())
+                .link(securityCheckLink)
                 .execute()
                 .map(guest -> {
-                    // Phase 2: Die eigentliche "Nacht" im Hintergrund
                     startDiscoNight(Mono.just(guest), ctx);
                     return new DiscoResponse(request.getGlobalId(), DiscoResponse.State.IN_BEARBEITUNG);
                 })
@@ -56,11 +66,11 @@ public class DiscoEntranceController {
 
     private void startDiscoNight(Mono<AMSInput> guestMono, DiscoContext ctx) {
         Chain.start(guestMono, ctx)
-                .link(new GuestDataSyncLink(archivPlusService, icdosService))
-                .link(new FloorSelectorLink(djService))
-                .link(new FloorRequirementLink(djService))
-                .link(new FloorForwardingLink())
-                .link(new DiscoReportLink())
+                .link(guestDataSyncLink)
+                .link(floorSelectorLink)
+                .link(floorRequirementLink)
+                .link(floorForwardingLink)
+                .link(discoReportLink)
                 .execute()
                 .subscribeOn(Schedulers.boundedElastic())
                 .subscribe(

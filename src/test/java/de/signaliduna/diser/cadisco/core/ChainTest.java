@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 class ChainTest {
 
     @Test
@@ -16,7 +19,7 @@ class ChainTest {
                 .link((data, c) -> data.toUpperCase())
                 .execute();
 
-        assert "HELLO".equals(result);
+        assertEquals("HELLO", result);
     }
 
     @Test
@@ -37,7 +40,7 @@ class ChainTest {
     void testChainBreakOnValidationError() {
         ChainContext ctx = new DefaultChainContext();
 
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(IllegalArgumentException.class, () ->
                 Chain.start(" ", ctx)
                         .link(new ValidationLink())
                         .link((data, c) -> "SHOULD NOT HAPPEN")

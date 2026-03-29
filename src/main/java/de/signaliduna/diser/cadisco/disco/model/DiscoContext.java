@@ -1,30 +1,27 @@
 package de.signaliduna.diser.cadisco.disco.model;
 
-import de.signaliduna.diser.cadisco.core.ChainContext;
+import de.signaliduna.diser.cadisco.core.DefaultChainContext;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Der Kontext fuer die Verarbeitung in der Disco.
- * Speichert alle relevanten Infos ueber den Gast und die Ergebnisse seiner Tanz-Besuche.
+ * Erweitert {@link DefaultChainContext} um disco-spezifischen Zustand.
+ * Thread-safe: Alle Listen verwenden CopyOnWriteArrayList fuer parallele Mono-Operationen.
  */
-@Slf4j
 @Getter
-public class DiscoContext implements ChainContext {
+public class DiscoContext extends DefaultChainContext {
 
-    private final UUID traceId = UUID.randomUUID();
     private final String globalId;
-    private final List<String> logs = new ArrayList<>();
-    private final List<String> downloadedDocuments = new ArrayList<>();
-    private final List<String> retrievedContracts = new ArrayList<>();
-    private final List<FloorDefinition> availableFloors = new ArrayList<>();
-    private final List<ProcessedFloor> results = new ArrayList<>();
+    private final List<String> logs = new CopyOnWriteArrayList<>();
+    private final List<String> downloadedDocuments = new CopyOnWriteArrayList<>();
+    private final List<String> retrievedContracts = new CopyOnWriteArrayList<>();
+    private final List<FloorDefinition> availableFloors = new CopyOnWriteArrayList<>();
+    private final List<ProcessedFloor> results = new CopyOnWriteArrayList<>();
 
     public DiscoContext(String globalId) {
         this.globalId = globalId;
@@ -34,7 +31,7 @@ public class DiscoContext implements ChainContext {
     public void log(String message) {
         String entry = String.format("[%s] [%s] %s", LocalDateTime.now(), globalId, message);
         logs.add(entry);
-        log.info(entry);
+        super.log(message);
     }
 
     public List<String> getFullLog() {
@@ -50,8 +47,8 @@ public class DiscoContext implements ChainContext {
     }
 
     public void setAvailableFloors(List<FloorDefinition> floors) {
-        this.availableFloors.clear();
-        this.availableFloors.addAll(floors);
+        availableFloors.clear();
+        availableFloors.addAll(floors);
     }
 
     public void addResult(ProcessedFloor result) {

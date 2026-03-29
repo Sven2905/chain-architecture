@@ -1,5 +1,6 @@
 package de.signaliduna.diser.cadisco.core;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
@@ -9,18 +10,10 @@ import java.util.UUID;
  * Generiert eine Trace-ID und loggt via SLF4J.
  */
 @Slf4j
+@Getter
 public class DefaultChainContext implements ChainContext {
 
-    private final UUID traceId;
-
-    public DefaultChainContext() {
-        this.traceId = UUID.randomUUID();
-    }
-
-    @Override
-    public UUID getTraceId() {
-        return traceId;
-    }
+    private final UUID traceId = UUID.randomUUID();
 
     @Override
     public void log(String message) {

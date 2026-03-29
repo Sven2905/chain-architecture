@@ -11,12 +11,14 @@ import reactor.core.publisher.Mono;
  */
 public class SecurityCheckLink implements ChainLink<Mono<AMSInput>, Mono<AMSInput>, DiscoContext> {
 
+    private static final String ALLOWED_SPARTE = "KV";
+
     @Override
     public Mono<AMSInput> process(Mono<AMSInput> guestMono, DiscoContext ctx) {
         return guestMono.flatMap(guest -> {
             ctx.log("Bouncer: Checking dresscode for guest from region " + guest.getSparte());
 
-            if (!"KV".equals(guest.getSparte())) {
+            if (!ALLOWED_SPARTE.equals(guest.getSparte())) {
                 ctx.log("Bouncer: Sorry, KV-guests only tonight. Permission denied.");
                 return Mono.error(new IllegalArgumentException("NICHT_ZUSTÄNDIG: Nur KV-Gäste haben heute Zutritt."));
             }

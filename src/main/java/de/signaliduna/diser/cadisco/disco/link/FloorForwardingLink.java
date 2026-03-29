@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 /**
- * Leitet den Gast auf den richtigen Dancefloor weiter.
+ * Leitet den Gast auf die erfolgreichen Dancefloors weiter.
  */
 public class FloorForwardingLink implements ChainLink<Mono<List<ProcessedFloor>>, Mono<List<ProcessedFloor>>, DiscoContext> {
 
@@ -20,8 +20,7 @@ public class FloorForwardingLink implements ChainLink<Mono<List<ProcessedFloor>>
             return Flux.fromIterable(results)
                     .filter(ProcessedFloor::isSuccessful)
                     .doOnNext(res -> ctx.log("Dancefloor: Opening door to '" + res.getDefinition().getName() + "' at: " + res.getDefinition().getUrl()))
-                    .collectList()
-                    .thenReturn(results);
+                    .then(Mono.just(results));
         });
     }
 }

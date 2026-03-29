@@ -25,16 +25,8 @@ public class FloorRequirementLink implements ChainLink<Mono<List<FloorDefinition
             ctx.log("DJ: Syncing dresscode for " + floors.size() + " floors...");
             return Flux.fromIterable(floors)
                     .flatMap(floor -> djService.extractFloorRequirements(floor, ctx.getDownloadedDocuments(), ctx.getRetrievedContracts())
-                            .map(data -> ProcessedFloor.builder()
-                                    .definition(floor)
-                                    .extractedData(data)
-                                    .successful(true)
-                                    .build())
-                            .onErrorResume(e -> Mono.just(ProcessedFloor.builder()
-                                    .definition(floor)
-                                    .successful(false)
-                                    .errorMessage(e.getMessage())
-                                    .build())))
+                            .map(data -> ProcessedFloor.success(floor, data))
+                            .onErrorResume(e -> Mono.just(ProcessedFloor.failure(floor, e.getMessage()))))
                     .doOnNext(ctx::addResult)
                     .collectList();
         });
