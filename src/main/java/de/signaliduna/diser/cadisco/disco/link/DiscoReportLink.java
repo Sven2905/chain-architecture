@@ -9,6 +9,17 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.util.ArrayList;
 
+/**
+ * Erstellt den Abschlussbericht der Disco-Nacht -- letztes Glied der Kette.
+ *
+ * <p>Sammelt alle relevanten Daten aus dem {@link DiscoContext} und verpackt
+ * sie in einen immutablen {@link DiscoReport}. Ein wuerdiger Abschluss fuer
+ * eine gut orchestrierte Nacht.</p>
+ *
+ * <p>Der Bericht enthaelt: besuchte Floors, das vollstaendige Verlaufsprotokoll,
+ * und einen Zeitstempel. Alles, was man fuer die Nachbesprechung braucht --
+ * oder fuer die Ausrede am naechsten Morgen.</p>
+ */
 public class DiscoReportLink implements ChainLink<GuestData, DiscoReport, DiscoContext> {
 
     @Override

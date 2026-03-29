@@ -39,3 +39,6 @@ out/
 
 # OS
 .DS_Store
+
+# Misc
+old/

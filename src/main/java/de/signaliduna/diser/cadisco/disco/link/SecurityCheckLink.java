@@ -8,6 +8,18 @@ import reactor.core.publisher.Mono;
 
 import java.util.Set;
 
+/**
+ * Der Bouncer -- erstes und wichtigstes Glied der Eingangskette (Phase 1).
+ *
+ * <p>Prueft, ob ein Gast eingelassen wird. Die Kriterien sind einfach:
+ * Eine gueltige Gast-ID und eine nicht-gesperrte Region. Wer aus einer
+ * gesperrten Region kommt, bekommt eine {@link ChainLinkException} und
+ * darf draussen warten.</p>
+ *
+ * <p>Dieser Link ist bewusst am Anfang der Kette platziert (Fail-Fast-Prinzip).
+ * Es waere schliesslich Ressourcenverschwendung, Floors fuer jemanden auszuwaehlen,
+ * der gar nicht reinkommen darf.</p>
+ */
 public class SecurityCheckLink implements ChainLink<DiscoEntryRequest, DiscoEntryRequest, DiscoContext> {
 
     private static final Set<String> BLOCKED_REGIONS = Set.of("BLOCKED", "BANNED");

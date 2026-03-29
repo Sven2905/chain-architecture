@@ -7,6 +7,17 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.List;
 
+/**
+ * Der DJ -- Herr ueber die Floors und ihre Beats.
+ *
+ * <p>Verwaltet die verfuegbaren Tanzflaechen samt BPM-Vorgaben, Mindestalter
+ * und VIP-Restriktionen. In der realen Welt waere dies eine Anbindung an ein
+ * Floor-Management-System. Hier simulieren wir das mit einer statischen Liste,
+ * weil selbst Simulationen Stil haben koennen.</p>
+ *
+ * <p>Der kuenstliche Delay von 100ms simuliert die Netzwerklatenz eines
+ * externen Service-Aufrufs. Realismus hat seinen Preis -- wenn auch nur in Millisekunden.</p>
+ */
 @Service
 public class DjService {
 

@@ -7,6 +7,14 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+/**
+ * Leitet den Gast auf die ausgewaehlten Tanzflaechen weiter -- viertes Glied der Nacht-Kette.
+ *
+ * <p>Nimmt die im {@link DiscoContext} hinterlegten {@code selectedFloors}
+ * und simuliert das Betreten jedes Floors. Jeder Eintritt wird einzeln
+ * im Context-Log protokolliert -- schliesslich will man spaeter wissen,
+ * wo man ueberall war.</p>
+ */
 public class FloorForwardingLink implements ChainLink<GuestData, GuestData, DiscoContext> {
 
     @Override

@@ -8,6 +8,16 @@ import de.signaliduna.diser.cadisco.disco.service.ArchivPlusService;
 import de.signaliduna.diser.cadisco.disco.service.IcdosService;
 import reactor.core.publisher.Mono;
 
+/**
+ * Synchronisiert Gastdaten mit den Legacy-Systemen -- erstes Glied der Nacht-Kette (Phase 2).
+ *
+ * <p>Ruft parallel {@link ArchivPlusService} und {@link IcdosService} via
+ * {@code Mono.zip()} auf. Beide Aufrufe laufen gleichzeitig, weil sequentielles
+ * Warten auf Legacy-Systeme eine Form der Selbstbestrafung ist, die niemand verdient hat.</p>
+ *
+ * <p>Das Ergebnis wird im {@link DiscoContext} hinterlegt und als angereichertes
+ * {@link GuestData} an das naechste Glied weitergereicht.</p>
+ */
 public class GuestDataSyncLink implements ChainLink<DiscoEntryRequest, GuestData, DiscoContext> {
 
     private final ArchivPlusService archivPlusService;

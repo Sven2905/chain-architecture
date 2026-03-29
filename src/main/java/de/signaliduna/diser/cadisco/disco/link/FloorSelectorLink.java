@@ -6,6 +6,13 @@ import de.signaliduna.diser.cadisco.disco.dto.GuestData;
 import de.signaliduna.diser.cadisco.disco.service.DjService;
 import reactor.core.publisher.Mono;
 
+/**
+ * Laedt die verfuegbaren Floors vom DJ -- zweites Glied der Nacht-Kette.
+ *
+ * <p>Fragt den {@link DjService} nach allen aktuell verfuegbaren Tanzflaechen
+ * und hinterlegt sie im {@link DiscoContext}. Die eigentliche Filterung nach
+ * Eignung des Gastes uebernimmt der naechste Link -- Arbeitsteilung ist eine Tugend.</p>
+ */
 public class FloorSelectorLink implements ChainLink<GuestData, GuestData, DiscoContext> {
 
     private final DjService djService;

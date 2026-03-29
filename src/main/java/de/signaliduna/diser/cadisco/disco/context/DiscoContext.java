@@ -12,6 +12,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Der Disco-spezifische Verarbeitungskontext.
+ *
+ * <p>Erweitert den generischen {@link ChainContext} um alles, was man fuer einen
+ * gepflegten Disco-Abend braucht: Gast-Daten, verfuegbare Floors, besuchte Floors,
+ * und ein ausfuehrliches Protokoll der Nacht -- fuer den Fall, dass sich am naechsten
+ * Morgen niemand mehr erinnert.</p>
+ *
+ * <p>Jede Instanz generiert automatisch eine Correlation-ID und Trace-ID.
+ * Thread-Safety: Jeder HTTP-Request erzeugt seinen eigenen Context.
+ * Geteilter Zustand zwischen Requests? Nicht in meinem Haus.</p>
+ */
 @Slf4j
 @Getter
 @Setter
