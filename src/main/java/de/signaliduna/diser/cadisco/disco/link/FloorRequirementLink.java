@@ -27,7 +27,6 @@ public class FloorRequirementLink implements ChainLink<Mono<List<FloorDefinition
                     .flatMap(floor -> djService.extractFloorRequirements(floor, ctx.getDownloadedDocuments(), ctx.getRetrievedContracts())
                             .map(data -> ProcessedFloor.success(floor, data))
                             .onErrorResume(e -> Mono.just(ProcessedFloor.failure(floor, e.getMessage()))))
-                    .doOnNext(ctx::addResult)
                     .collectList();
         });
     }
