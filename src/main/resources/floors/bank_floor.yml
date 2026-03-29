@@ -1,0 +1,15 @@
+disco:
+  floors:
+    bank:
+      name: "Bankverbindung"
+      useWhen: "Der Kunde möchte seine Bankverbindung oder sein Konto ändern."
+      url: "http://service-banken/api/v1/update"
+      requiredData: |-
+        {
+          "type": "object",
+          "properties": {
+            "iban": { "type": "string" },
+            "bic": { "type": "string" },
+            "bankName": { "type": "string" }
+          }
+        }

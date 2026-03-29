@@ -1,46 +1,59 @@
 package de.signaliduna.diser.cadisco.disco.link;
 
 import de.signaliduna.diser.cadisco.core.ChainLink;
-import de.signaliduna.diser.cadisco.disco.context.DiscoContext;
-import de.signaliduna.diser.cadisco.disco.dto.DiscoEntryRequest;
-import de.signaliduna.diser.cadisco.disco.dto.GuestData;
+import de.signaliduna.diser.cadisco.disco.model.AMSInput;
+import de.signaliduna.diser.cadisco.disco.model.DiscoContext;
 import de.signaliduna.diser.cadisco.disco.service.ArchivPlusService;
 import de.signaliduna.diser.cadisco.disco.service.IcdosService;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 /**
- * Synchronisiert Gastdaten mit den Legacy-Systemen -- erstes Glied der Nacht-Kette (Phase 2).
- *
- * <p>Ruft parallel {@link ArchivPlusService} und {@link IcdosService} via
- * {@code Mono.zip()} auf. Beide Aufrufe laufen gleichzeitig, weil sequentielles
- * Warten auf Legacy-Systeme eine Form der Selbstbestrafung ist, die niemand verdient hat.</p>
- *
- * <p>Das Ergebnis wird im {@link DiscoContext} hinterlegt und als angereichertes
- * {@link GuestData} an das naechste Glied weitergereicht.</p>
+ * Synchronisiert Gastdaten aus Archiv+ und ICDOS.
+ * Parallele Aufrufe mit Retry und Fallback -- weil Legacy-Systeme Geduld erfordern.
  */
-public class GuestDataSyncLink implements ChainLink<DiscoEntryRequest, GuestData, DiscoContext> {
+@RequiredArgsConstructor
+public class GuestDataSyncLink implements ChainLink<Mono<AMSInput>, Mono<AMSInput>, DiscoContext> {
 
     private final ArchivPlusService archivPlusService;
     private final IcdosService icdosService;
 
-    public GuestDataSyncLink(ArchivPlusService archivPlusService, IcdosService icdosService) {
-        this.archivPlusService = archivPlusService;
-        this.icdosService = icdosService;
+    @Override
+    public Mono<AMSInput> process(Mono<AMSInput> guestMono, DiscoContext ctx) {
+        return guestMono.flatMap(guest -> {
+            ctx.log("Sync: Retrieving guest details from Archiv+ and Icdos...");
+
+            Mono<Void> archivSync = archivPlusService.requestDocuments(guest.getGlobalId())
+                    .then(pollArchivPlus(guest.getGlobalId(), ctx))
+                    .flatMap(archivPlusService::getDownloadLink)
+                    .doOnNext(ctx::addDocument)
+                    .then();
+
+            Mono<Void> icdosSync = icdosService.getContracts(guest.getContractNumbers())
+                    .flatMapIterable(list -> list)
+                    .doOnNext(ctx::addContract)
+                    .then();
+
+            return Mono.zip(archivSync, icdosSync)
+                    .thenReturn(guest)
+                    .onErrorMap(e -> new RuntimeException("Sync: Data retrieval failed. " + e.getMessage()));
+        });
     }
 
-    @Override
-    public Mono<GuestData> transform(Mono<DiscoEntryRequest> input, DiscoContext context) {
-        return input.flatMap(request ->
-                Mono.zip(
-                        archivPlusService.fetchGuestData(request.guestId(), request.region()),
-                        icdosService.verifyGuestRecord(request.guestId())
-                ).map(tuple -> {
-                    GuestData guestData = tuple.getT1();
-                    boolean verified = tuple.getT2();
-                    context.setGuestData(guestData);
-                    context.log("Daten synchronisiert: " + guestData.name() + ", verifiziert=" + verified);
-                    return guestData;
-                })
-        );
+    private Mono<String> pollArchivPlus(String guestId, DiscoContext ctx) {
+        return Mono.defer(() -> {
+            ctx.log("Sync: Waiting for Archiv+ release...");
+            return archivPlusService.getArchiveStatus(guestId)
+                    .flatMap(status -> "COMPLETED".equals(status)
+                            ? Mono.just(status)
+                            : Mono.error(new RuntimeException("Pending")));
+        })
+        .retryWhen(reactor.util.retry.Retry.fixedDelay(3, Duration.ofSeconds(2)))
+        .onErrorResume(e -> {
+            ctx.log("Sync: Archiv+ timeout. Using Emergency-Fallback.");
+            return archivPlusService.fallbackDocuments();
+        });
     }
 }

@@ -1,39 +1,30 @@
 package de.signaliduna.diser.cadisco.disco.link;
 
 import de.signaliduna.diser.cadisco.core.ChainLink;
-import de.signaliduna.diser.cadisco.disco.context.DiscoContext;
-import de.signaliduna.diser.cadisco.disco.dto.DiscoReport;
-import de.signaliduna.diser.cadisco.disco.dto.GuestData;
+import de.signaliduna.diser.cadisco.disco.model.DiscoContext;
+import de.signaliduna.diser.cadisco.disco.model.DiscoResponse;
+import de.signaliduna.diser.cadisco.disco.model.ProcessedFloor;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Erstellt den Abschlussbericht der Disco-Nacht -- letztes Glied der Kette.
- *
- * <p>Sammelt alle relevanten Daten aus dem {@link DiscoContext} und verpackt
- * sie in einen immutablen {@link DiscoReport}. Ein wuerdiger Abschluss fuer
- * eine gut orchestrierte Nacht.</p>
- *
- * <p>Der Bericht enthaelt: besuchte Floors, das vollstaendige Verlaufsprotokoll,
- * und einen Zeitstempel. Alles, was man fuer die Nachbesprechung braucht --
- * oder fuer die Ausrede am naechsten Morgen.</p>
+ * Erstellt den Abschlussbericht der Disco-Nacht.
  */
-public class DiscoReportLink implements ChainLink<GuestData, DiscoReport, DiscoContext> {
+public class DiscoReportLink implements ChainLink<Mono<List<ProcessedFloor>>, Mono<DiscoResponse>, DiscoContext> {
 
     @Override
-    public Mono<DiscoReport> transform(Mono<GuestData> input, DiscoContext context) {
-        return input.map(guestData -> {
-            context.log("Abschlussbericht wird erstellt für Gast " + guestData.guestId() + ".");
-            DiscoReport report = new DiscoReport(
-                    guestData.guestId(),
-                    new ArrayList<>(context.getVisitedFloors()),
-                    new ArrayList<>(context.getLogs()),
-                    Instant.now()
-            );
-            context.log("Disco-Nacht beendet. Besuchte Floors: " + context.getVisitedFloors());
-            return report;
+    public Mono<DiscoResponse> process(Mono<List<ProcessedFloor>> resultsMono, DiscoContext ctx) {
+        return resultsMono.map(results -> {
+            long successCount = results.stream().filter(ProcessedFloor::isSuccessful).count();
+            long totalCount = results.size();
+
+            DiscoResponse.State finalState = (totalCount > 0 && successCount == totalCount)
+                    ? DiscoResponse.State.VERARBEITET
+                    : DiscoResponse.State.TEILWEISE_VERARBEITET;
+
+            ctx.log("Disco-Report: Guest's night was " + finalState + " (" + successCount + "/" + totalCount + " floors rocked)");
+            return new DiscoResponse(ctx.getGlobalId(), finalState);
         });
     }
 }

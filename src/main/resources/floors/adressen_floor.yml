@@ -1,0 +1,15 @@
+disco:
+  floors:
+    adressen:
+      name: "Adressänderung"
+      useWhen: "Der Kunde möchte seine Adresse oder seinen Wohnort ändern."
+      url: "http://service-adressen/api/v1/update"
+      requiredData: |-
+        {
+          "type": "object",
+          "properties": {
+            "street": { "type": "string" },
+            "zip": { "type": "string" },
+            "city": { "type": "string" }
+          }
+        }

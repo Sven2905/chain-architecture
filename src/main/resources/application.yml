@@ -1,6 +1,15 @@
+spring:
+  config:
+    import: "optional:classpath:floors/"
+  main:
+    banner-mode: "off"
+
 server:
   port: 8080
 
-spring:
-  application:
-    name: cadisco
+disco:
+  floors: {}
+
+logging:
+  level:
+    de.signaliduna.diser: DEBUG

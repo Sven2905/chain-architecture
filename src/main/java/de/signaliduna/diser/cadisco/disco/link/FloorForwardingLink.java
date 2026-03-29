@@ -1,32 +1,27 @@
 package de.signaliduna.diser.cadisco.disco.link;
 
 import de.signaliduna.diser.cadisco.core.ChainLink;
-import de.signaliduna.diser.cadisco.disco.context.DiscoContext;
-import de.signaliduna.diser.cadisco.disco.dto.GuestData;
+import de.signaliduna.diser.cadisco.disco.model.DiscoContext;
+import de.signaliduna.diser.cadisco.disco.model.ProcessedFloor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 
 /**
- * Leitet den Gast auf die ausgewaehlten Tanzflaechen weiter -- viertes Glied der Nacht-Kette.
- *
- * <p>Nimmt die im {@link DiscoContext} hinterlegten {@code selectedFloors}
- * und simuliert das Betreten jedes Floors. Jeder Eintritt wird einzeln
- * im Context-Log protokolliert -- schliesslich will man spaeter wissen,
- * wo man ueberall war.</p>
+ * Leitet den Gast auf den richtigen Dancefloor weiter.
  */
-public class FloorForwardingLink implements ChainLink<GuestData, GuestData, DiscoContext> {
+public class FloorForwardingLink implements ChainLink<Mono<List<ProcessedFloor>>, Mono<List<ProcessedFloor>>, DiscoContext> {
 
     @Override
-    public Mono<GuestData> transform(Mono<GuestData> input, DiscoContext context) {
-        return input.map(guestData -> {
-            List<String> floorNames = context.getSelectedFloors().stream()
-                    .map(floor -> floor.floorName())
-                    .toList();
-            context.setVisitedFloors(floorNames);
-            floorNames.forEach(name ->
-                    context.log("Gast " + guestData.guestId() + " betritt Floor: " + name));
-            return guestData;
+    public Mono<List<ProcessedFloor>> process(Mono<List<ProcessedFloor>> resultsMono, DiscoContext ctx) {
+        return resultsMono.flatMap(results -> {
+            ctx.log("Security: Directing guest to " + results.size() + " dancefloors...");
+            return Flux.fromIterable(results)
+                    .filter(ProcessedFloor::isSuccessful)
+                    .doOnNext(res -> ctx.log("Dancefloor: Opening door to '" + res.getDefinition().getName() + "' at: " + res.getDefinition().getUrl()))
+                    .collectList()
+                    .thenReturn(results);
         });
     }
 }
